@@ -1,3 +1,4 @@
+# Набор инструментов для анализа датасета и построения пайплайна препроцессинга
 from __future__ import annotations
 
 from collections import Counter
@@ -22,7 +23,7 @@ class TransformationResult:
     feature_names: List[str]
 
 
-# Формирует краткое описание датасета для подсказки LLM
+# Формирует краткое описание датасета для LLM
 def summarize(df: pd.DataFrame, target: str) -> Dict[str, Any]:
     columns_info = []
     for column in df.columns:
@@ -59,7 +60,7 @@ def summarize(df: pd.DataFrame, target: str) -> Dict[str, Any]:
     return summary
 
 
-# Формирует текст запроса для LLM с инструкциями и сводкой по колонкам
+# Собирает промпт с инструкциями для LLM
 def build_prompt(dataset_name: str, summary: Dict[str, Any], target: str) -> str:
     header = (
         "You are a senior data preprocessing expert. Produce a JSON plan for transforming the dataset.\n"
@@ -99,7 +100,7 @@ def build_prompt(dataset_name: str, summary: Dict[str, Any], target: str) -> str
     return header + "\n".join(column_lines)
 
 
-# Применяет рекомендации LLM и строит обученный пайплайн препроцессинга
+# Применяет рекомендации и обучает пайплайн трансформаций
 def apply_recommendations(
     df: pd.DataFrame, target: str, recommendations: Mapping[str, Any]
 ) -> TransformationResult:
@@ -139,7 +140,7 @@ def apply_recommendations(
     return TransformationResult(features=features, target=y, pipeline=pipeline, history=history, feature_names=feature_names)
 
 
-# Разбивает выборку на train/val/test с учётом возможной стратификации
+# Делит данные на train/val/test с учётом стратификации
 def split_dataset(
     features: pd.DataFrame,
     target: pd.Series,
@@ -165,7 +166,7 @@ def split_dataset(
     }
 
 
-# Собирает метаданные о выполненных трансформациях и настройках запуска
+# Формирует JSON с метаданными обработки
 def generate_metadata(
     dataset_name: str,
     summary: Dict[str, Any],
@@ -209,6 +210,7 @@ def generate_metadata(
     return metadata
 
 
+# Заполняет пропущенные ключи рекомендаций значениями по умолчанию
 def _fill_defaults(recommendations: Mapping[str, Any]) -> MutableMapping[str, Any]:
     defaults = {
         "drop_columns": [],
@@ -224,6 +226,7 @@ def _fill_defaults(recommendations: Mapping[str, Any]) -> MutableMapping[str, An
     return merged
 
 
+# Нормализует стратегии импутации к поддерживаемым значениям
 def _sanitize_impute_map(impute_map: Mapping[str, Any]) -> Dict[str, Any]:
     normalized: Dict[str, Any] = {}
     synonym_map = {
@@ -244,6 +247,7 @@ def _sanitize_impute_map(impute_map: Mapping[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+# Создаёт новые признаки по выражениям, если это возможно
 def _create_new_features(df: pd.DataFrame, new_features: Sequence[Any]) -> List[str]:
     created: List[str] = []
     for feature in new_features:
@@ -265,12 +269,14 @@ def _create_new_features(df: pd.DataFrame, new_features: Sequence[Any]) -> List[
     return created
 
 
+# Определяет список признаков для кодирования
 def _resolve_encode_columns(df: pd.DataFrame, encode: Iterable[str]) -> List[str]:
     encode_set = {col for col in encode if col in df.columns}
     inferred = {col for col in df.columns if df[col].dtype == "object" or str(df[col].dtype) == "category"}
     return sorted(encode_set | inferred)
 
 
+# Собирает ColumnTransformer с числовыми и категориальными пайплайнами
 def _build_pipeline(
     features: pd.DataFrame,
     encode_cols: Iterable[str],
@@ -294,6 +300,7 @@ def _build_pipeline(
     return column_transformer
 
 
+# Формирует пайплайн для категориального признака
 def _categorical_pipeline(column: str, impute_map: Mapping[str, str]) -> Pipeline:
     strategy = impute_map.get(column, "most_frequent")
     imputer_kwargs = {"strategy": strategy}
@@ -303,6 +310,7 @@ def _categorical_pipeline(column: str, impute_map: Mapping[str, str]) -> Pipelin
     return Pipeline([("imputer", SimpleImputer(**imputer_kwargs)), ("encoder", encoder)])
 
 
+# Формирует пайплайн для числового признака
 def _numeric_pipeline(column: str, normalize_cols: set[str], impute_map: Mapping[str, str]) -> Pipeline:
     strategy = impute_map.get(column, "median")
     imputer_kwargs = {"strategy": strategy}
@@ -314,11 +322,12 @@ def _numeric_pipeline(column: str, normalize_cols: set[str], impute_map: Mapping
     return Pipeline(steps)
 
 
-# Проверяет, относится ли dtype к категориальным/булевым типам
+# Проверяет, является ли тип признака категориальным
 def _is_categorical_dtype(dtype) -> bool:
     return str(dtype) in {"object", "category", "bool"}
 
 
+# Создаёт OneHotEncoder с защитой от несовместимых версий
 def _one_hot_encoder() -> OneHotEncoder:
     try:
         return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
@@ -326,6 +335,7 @@ def _one_hot_encoder() -> OneHotEncoder:
         return OneHotEncoder(handle_unknown="ignore", sparse=False)
 
 
+# Определяет, можно ли выполнять стратифицированное разбиение
 def _can_stratify(target: pd.Series, test_size: float, val_size: float) -> bool:
     counter = Counter(target.dropna())
     class_count = len(counter)
@@ -350,6 +360,7 @@ def _can_stratify(target: pd.Series, test_size: float, val_size: float) -> bool:
     return True
 
 
+# Безопасно сериализует JSON дедуплицируя Unicode
 def _json_dumps_safe(payload: Any) -> str:
     import json
     return json.dumps(payload, indent=2, ensure_ascii=False)

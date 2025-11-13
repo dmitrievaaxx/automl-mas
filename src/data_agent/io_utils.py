@@ -9,18 +9,19 @@ from typing import Dict, Mapping, Tuple
 import pandas as pd
 
 
+# Подготавливает пути и утилиты ввода-вывода для DataAgent
 DATA_DIR = Path("data")
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 
 
-# Создаёт директорию при необходимости и возвращает путь
+# Создаёт директорию, если её ещё нет
 def ensure_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-# Загружает датасет из локального файла или URL в DataFrame
+# Загружает датасет из файла или URL в DataFrame
 def load_dataset(source: str | Path) -> pd.DataFrame:
     path = Path(source)
     if path.exists():
@@ -42,12 +43,12 @@ def load_dataset(source: str | Path) -> pd.DataFrame:
     raise FileNotFoundError(f"Dataset source not found: {source}")
 
 
-# Загружает несколько датасетов в словарь DataFrame
+# Загружает несколько наборов данных в словарь
 def load_multiple(datasets: Mapping[str, str | Path]) -> Dict[str, pd.DataFrame]:
     return {name: load_dataset(path) for name, path in datasets.items()}
 
 
-# Сохраняет разбиения train/val/test в CSV и возвращает пути
+# Сохраняет разбиения на train/val/test в CSV
 def save_splits(dataset_name: str, splits: Mapping[str, Tuple[pd.DataFrame, pd.Series]]) -> Dict[str, str]:
     base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
     paths: Dict[str, str] = {}
@@ -61,7 +62,7 @@ def save_splits(dataset_name: str, splits: Mapping[str, Tuple[pd.DataFrame, pd.S
     return paths
 
 
-# Сохраняет метаданные в JSON-файл
+# Сохраняет метаданные обработки в JSON-файл
 def save_metadata(dataset_name: str, metadata: Dict) -> str:
     base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
     meta_path = base_dir / f"{dataset_name}_metadata.json"
@@ -70,7 +71,7 @@ def save_metadata(dataset_name: str, metadata: Dict) -> str:
     return str(meta_path)
 
 
-# Очищает папку с обработанными данными для повторного запуска
+# Полностью очищает папку обработанных данных
 def reset_processed_folder(dataset_name: str) -> Path:
     base_dir = PROCESSED_DIR / dataset_name
     if base_dir.exists():
@@ -78,7 +79,7 @@ def reset_processed_folder(dataset_name: str) -> Path:
     return ensure_dir(base_dir)
 
 
-# Скачивает датасет соревнования Kaggle через CLI и распаковывает архив
+# Скачивает соревнование Kaggle и распаковывает архив
 def download_kaggle_competition(competition: str, destination: Path | None = None, force: bool = False) -> Path:
     destination = ensure_dir(destination or RAW_DIR / competition)
     archive_path = destination / f"{competition}.zip"

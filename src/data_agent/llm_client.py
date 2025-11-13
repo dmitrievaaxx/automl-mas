@@ -1,3 +1,4 @@
+# Клиент OpenRouter с поддержкой фолбэков и логированием вызовов
 from __future__ import annotations
 
 import json
@@ -10,24 +11,24 @@ from requests import Response
 
 try:
     from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - optional dependency
-    load_dotenv = None  # type: ignore[assignment]
+except ImportError:
+    load_dotenv = None
 
 
 DEFAULT_MODELS = [
-    "meta-llama/llama-4-maverick:free",             # ~400B-equivalent mixture (top-tier fallback)
-    "meta-llama/llama-3.3-70b-instruct:free",       # 70B
-    "google/gemini-2.0-flash-exp:free",             # large mixture, >20B effective
-    "mistralai/mistral-small-3.2-24b-instruct:free",# 24B
-    "deepseek/deepseek-r1-0528-qwen3-8b:free",      # 8B
-    "qwen/qwen3-coder:free",                        # ~7B
-    "mistralai/mistral-7b-instruct:free",           # 7B
-    "meta-llama/llama-3.2-3b-instruct:free",        # 3B
+    "meta-llama/llama-4-maverick:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-small-3.2-24b-instruct:free",
+    "deepseek/deepseek-r1-0528-qwen3-8b:free",
+    "qwen/qwen3-coder:free",
+    "mistralai/mistral-7b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
 ]
 
 
-# Оборачивает OpenRouter API с поддержкой последовательных фолбэков
 class OpenRouterLLM:
+    # Настраивает клиента, список моделей и HTTP-сессию
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -46,7 +47,7 @@ class OpenRouterLLM:
         self.session = requests.Session()
         self.last_call: Optional[Dict[str, Any]] = None
 
-    # Запрашивает рекомендации, перебирая список моделей до успешного ответа
+    # Перебирает модели, пока одна не вернёт корректный JSON
     def get_recommendations(self, dataset_name: str, prompt: str) -> Dict[str, Any]:
         last_error: Optional[Exception] = None
         self.last_call = {
@@ -70,7 +71,7 @@ class OpenRouterLLM:
         self.last_call["error"] = str(last_error) if last_error else "Unknown error"
         raise RuntimeError(f"All LLM models failed: {last_error}") from last_error
 
-    # Делает HTTP-запрос к конкретной модели
+    # Выполняет HTTP-вызов выбранной модели OpenRouter
     def _call_model(self, model: str, prompt: str) -> str:
         payload = {
             "model": model,
@@ -90,7 +91,7 @@ class OpenRouterLLM:
             raise ValueError("No choices returned by LLM response.")
         return choices[0]["message"]["content"]
 
-    # Преобразует ответ модели в словарь JSON
+    # Преобразует строку ответа в словарь JSON
     @staticmethod
     def _parse_json(raw: str) -> Dict[str, Any]:
         candidates = [raw.strip()]
@@ -107,7 +108,7 @@ class OpenRouterLLM:
                 continue
         raise ValueError("LLM response is not valid JSON.")
 
-    # Обрабатывает HTTP-ошибки и добавляет текст ответа поставщика
+    # Бросает подробную ошибку, если HTTP-ответ неуспешный
     @staticmethod
     def _raise_for_status(response: Response) -> None:
         try:

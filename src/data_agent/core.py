@@ -1,3 +1,4 @@
+# Управляет жизненным циклом DataAgent и его конфигурацией
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,8 +30,8 @@ class AgentConfig:
     random_state: int = 42
 
 
-# Управляет полным циклом подготовки датасетов для AutoML
 class DataAgent:
+    # Инициализирует агента набором датасетов, таргетом и LLM-клиентом
     def __init__(
         self,
         datasets: Mapping[str, str],
@@ -45,7 +46,7 @@ class DataAgent:
         self.llm = llm_client
         self.config = config or AgentConfig()
 
-    # Выполняет обработку всех зарегистрированных датасетов и возвращает пути артефактов
+    # Запускает обработку для всех датасетов и возвращает пути артефактов
     def run(self) -> Dict[str, Dict[str, str]]:
         data_frames = load_multiple(self.datasets)
         results: Dict[str, Dict[str, str]] = {}
@@ -107,7 +108,7 @@ class DataAgent:
 
         return results
 
-    # Запрашивает рекомендации препроцессинга у LLM-клиента
+    # Запрашивает рекомендации по препроцессингу у LLM
     def _get_recommendations(self, dataset_name: str, prompt: str) -> Dict:
         if self.llm is None:
             raise RuntimeError("LLM client is not configured. Provide OpenRouterLLM instance.")
