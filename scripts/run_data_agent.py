@@ -1,5 +1,4 @@
-# --- CLI-обёртка для запуска DataAgent и автообнаружения датасетов
-import argparse
+# --- Запуск DataAgent с автообнаружением датасетов
 import sys
 from pathlib import Path
 
@@ -11,38 +10,6 @@ if SRC_PATH.exists():
 
 from data_agent.core import DataAgent
 from data_agent.llm_client import OpenRouterLLM
-
-
-# --- Разбирает аргументы командной строки
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the DataAgent preprocessing pipeline.")
-    parser.add_argument(
-        "--dataset",
-        dest="datasets",
-        action="append",
-        type=str,
-        default=None,
-        help=(
-            "Dataset path or directory (can be passed multiple times). "
-            "If omitted, the runner auto-discovers CSV files under data/raw/."
-        ),
-    )
-    parser.add_argument(
-        "--target",
-        type=str,
-        default="Survived",
-        help="Name of the target column in the dataset (default: Survived).",
-    )
-    parser.add_argument(
-        "--models",
-        type=str,
-        default=None,
-        help=(
-            "Comma-separated list of OpenRouter model IDs to try in order. "
-            "If omitted, built-in defaults are used."
-        ),
-    )
-    return parser.parse_args()
 
 
 # --- Приводит путь к датасету к абсолютному виду
@@ -120,16 +87,11 @@ def _derive_dataset_name(csv_path: Path, raw_root: Path) -> str:
         return csv_path.stem
 
 
-# --- Точка входа CLI для запуска DataAgent
+# --- Основная точка входа агента
 def main() -> None:
-    args = parse_args()
-    dataset_map = discover_dataset_files(args.datasets)
-    models = None
-    if args.models:
-        models = [model.strip() for model in args.models.split(",") if model.strip()]
-
+    dataset_map = discover_dataset_files(None)
     try:
-        llm = OpenRouterLLM(models=models)
+        llm = OpenRouterLLM()
     except ValueError as exc:
         raise RuntimeError(
             "OPENROUTER_API_KEY not found. Set the environment variable before running the agent."
@@ -137,7 +99,7 @@ def main() -> None:
 
     agent = DataAgent(
         datasets=dataset_map,
-        target=args.target,
+        target="Survived",
         llm_client=llm,
     )
 

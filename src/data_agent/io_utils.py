@@ -1,27 +1,26 @@
+# --- Утилиты ввода-вывода и работы с путями для DataAgent
 from __future__ import annotations
 
 import json
 import shutil
-import subprocess
 from pathlib import Path
 from typing import Dict, Mapping, Tuple
 
 import pandas as pd
 
 
-# Подготавливает пути и утилиты ввода-вывода для DataAgent
 DATA_DIR = Path("data")
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 
 
-# Создаёт директорию, если её ещё нет
+# --- Создаёт директорию, если её ещё нет
 def ensure_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-# Загружает датасет из файла или URL в DataFrame
+# --- Загружает датасет из файла или URL в DataFrame
 def load_dataset(source: str | Path) -> pd.DataFrame:
     path = Path(source)
     if path.exists():
@@ -43,12 +42,12 @@ def load_dataset(source: str | Path) -> pd.DataFrame:
     raise FileNotFoundError(f"Dataset source not found: {source}")
 
 
-# Загружает несколько наборов данных в словарь
+# --- Загружает несколько наборов данных в словарь
 def load_multiple(datasets: Mapping[str, str | Path]) -> Dict[str, pd.DataFrame]:
     return {name: load_dataset(path) for name, path in datasets.items()}
 
 
-# Сохраняет разбиения на train/val/test в CSV
+# --- Сохраняет разбиения на train/val/test в CSV
 def save_splits(dataset_name: str, splits: Mapping[str, Tuple[pd.DataFrame, pd.Series]]) -> Dict[str, str]:
     base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
     paths: Dict[str, str] = {}
@@ -62,7 +61,7 @@ def save_splits(dataset_name: str, splits: Mapping[str, Tuple[pd.DataFrame, pd.S
     return paths
 
 
-# Сохраняет метаданные обработки в JSON-файл
+# --- Сохраняет метаданные обработки в JSON-файл
 def save_metadata(dataset_name: str, metadata: Dict) -> str:
     base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
     meta_path = base_dir / f"{dataset_name}_metadata.json"
@@ -71,29 +70,10 @@ def save_metadata(dataset_name: str, metadata: Dict) -> str:
     return str(meta_path)
 
 
-# Полностью очищает папку обработанных данных
+# --- Полностью очищает папку обработанных данных
 def reset_processed_folder(dataset_name: str) -> Path:
     base_dir = PROCESSED_DIR / dataset_name
     if base_dir.exists():
         shutil.rmtree(base_dir)
     return ensure_dir(base_dir)
-
-
-# Скачивает соревнование Kaggle и распаковывает архив
-def download_kaggle_competition(competition: str, destination: Path | None = None, force: bool = False) -> Path:
-    destination = ensure_dir(destination or RAW_DIR / competition)
-    archive_path = destination / f"{competition}.zip"
-
-    if archive_path.exists() and not force:
-        return destination
-
-    cmd = ["kaggle", "competitions", "download", "-c", competition, "-p", str(destination)]
-    subprocess.run(cmd, check=True)
-
-    if archive_path.exists():
-        shutil.unpack_archive(str(archive_path), extract_dir=destination)
-    else:
-        raise FileNotFoundError(f"Expected Kaggle archive at {archive_path}, but it was not created.")
-
-    return destination
 

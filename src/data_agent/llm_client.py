@@ -1,4 +1,4 @@
-# Клиент OpenRouter с поддержкой фолбэков и логированием вызовов
+# --- Клиент OpenRouter с поддержкой фолбэков и логированием вызовов
 from __future__ import annotations
 
 import json
@@ -28,7 +28,7 @@ DEFAULT_MODELS = [
 
 
 class OpenRouterLLM:
-    # Настраивает клиента, список моделей и HTTP-сессию
+    # --- Настраивает клиента, список моделей и HTTP-сессию
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -47,7 +47,7 @@ class OpenRouterLLM:
         self.session = requests.Session()
         self.last_call: Optional[Dict[str, Any]] = None
 
-    # Перебирает модели, пока одна не вернёт корректный JSON
+    # --- Перебирает модели, пока одна не вернёт корректный JSON
     def get_recommendations(self, dataset_name: str, prompt: str) -> Dict[str, Any]:
         last_error: Optional[Exception] = None
         self.last_call = {
@@ -71,7 +71,7 @@ class OpenRouterLLM:
         self.last_call["error"] = str(last_error) if last_error else "Unknown error"
         raise RuntimeError(f"All LLM models failed: {last_error}") from last_error
 
-    # Выполняет HTTP-вызов выбранной модели OpenRouter
+    # --- Выполняет HTTP-вызов выбранной модели OpenRouter
     def _call_model(self, model: str, prompt: str) -> str:
         payload = {
             "model": model,
@@ -91,7 +91,7 @@ class OpenRouterLLM:
             raise ValueError("No choices returned by LLM response.")
         return choices[0]["message"]["content"]
 
-    # Преобразует строку ответа в словарь JSON
+    # --- Преобразует строку ответа в словарь JSON
     @staticmethod
     def _parse_json(raw: str) -> Dict[str, Any]:
         candidates = [raw.strip()]
@@ -108,7 +108,7 @@ class OpenRouterLLM:
                 continue
         raise ValueError("LLM response is not valid JSON.")
 
-    # Бросает подробную ошибку, если HTTP-ответ неуспешный
+    # --- Бросает подробную ошибку, если HTTP-ответ неуспешный
     @staticmethod
     def _raise_for_status(response: Response) -> None:
         try:
