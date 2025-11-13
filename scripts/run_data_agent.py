@@ -1,4 +1,4 @@
-# CLI-запуск DataAgent с автообнаружением датасетов и настройкой LLM
+# --- CLI-обёртка для запуска DataAgent и автообнаружения датасетов
 import argparse
 import sys
 from pathlib import Path
@@ -13,7 +13,7 @@ from data_agent.core import DataAgent
 from data_agent.llm_client import OpenRouterLLM
 
 
-# Разбирает аргументы командной строки
+# --- Разбирает аргументы командной строки
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the DataAgent preprocessing pipeline.")
     parser.add_argument(
@@ -45,7 +45,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# Приводит указанный путь к датасету к абсолютному виду
+# --- Приводит путь к датасету к абсолютному виду
 def resolve_dataset_path(raw_path: Path) -> Path:
     if raw_path.is_absolute():
         return raw_path.resolve()
@@ -55,7 +55,7 @@ def resolve_dataset_path(raw_path: Path) -> Path:
     return (PROJECT_ROOT / "data" / "raw" / raw_path).resolve()
 
 
-# Собирает список файлов-датасетов на основе аргументов или каталога data/raw
+# --- Собирает список файлов-датасетов из аргументов или каталога data/raw
 def discover_dataset_files(dataset_args: list[str] | None) -> dict[str, Path]:
     raw_root = PROJECT_ROOT / "data" / "raw"
     datasets: dict[str, Path] = {}
@@ -93,7 +93,7 @@ def discover_dataset_files(dataset_args: list[str] | None) -> dict[str, Path]:
     return datasets
 
 
-# Подбирает подходящие CSV внутри переданного пути
+# --- Подбирает подходящие CSV внутри переданного пути
 def _collect_csv_candidates(path: Path) -> list[Path]:
     if path.is_file() and path.suffix.lower() == ".csv":
         return [path.resolve()]
@@ -109,7 +109,7 @@ def _collect_csv_candidates(path: Path) -> list[Path]:
     return []
 
 
-# Определяет имя набора данных по файлу и каталогу raw
+# --- Определяет имя набора данных по файлу и каталогу raw
 def _derive_dataset_name(csv_path: Path, raw_root: Path) -> str:
     try:
         relative_parent = csv_path.parent.resolve().relative_to(raw_root.resolve())
@@ -120,7 +120,7 @@ def _derive_dataset_name(csv_path: Path, raw_root: Path) -> str:
         return csv_path.stem
 
 
-# Точка входа CLI, orchestrates запуск DataAgent
+# --- Точка входа CLI для запуска DataAgent
 def main() -> None:
     args = parse_args()
     dataset_map = discover_dataset_files(args.datasets)
