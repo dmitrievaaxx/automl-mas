@@ -30,61 +30,40 @@ def discover_dataset_files(dataset_args: list[str] | None) -> dict[str, Path]:
     if dataset_args:
         for item in dataset_args:
             resolved = resolve_dataset_path(Path(item))
-            candidates = _collect_csv_candidates(resolved)
-            if not candidates:
-                raise FileNotFoundError(f"No CSV files found for dataset input: {item}")
-            for csv_path in candidates:
-                datasets[_derive_dataset_name(csv_path, raw_root)] = csv_path
+            datasets[_dataset_key(resolved, raw_root)] = resolved
         return datasets
 
     if not raw_root.exists():
         raise FileNotFoundError(f"Raw data folder not found at {raw_root}")
 
-    for entry in sorted(raw_root.iterdir()):
-        if entry.is_file() and entry.suffix.lower() == ".csv":
-            csv_path = entry.resolve()
-            datasets[_derive_dataset_name(csv_path, raw_root)] = csv_path
-        elif entry.is_dir():
-            candidates = _collect_csv_candidates(entry)
-            if len(candidates) == 1:
-                csv_path = candidates[0]
-                datasets[_derive_dataset_name(csv_path, raw_root)] = csv_path
-            elif len(candidates) > 1:
-                raise RuntimeError(
-                    f"Multiple CSV files found in {entry}. Specify --dataset explicitly for this folder."
-                )
+    for dataset_dir in sorted(p for p in raw_root.iterdir() if p.is_dir()):
+        base_name = dataset_dir.name
+        candidate = (dataset_dir / "train.csv").resolve()
+        if candidate.exists():
+            datasets[f"{base_name}_train"] = candidate
 
     if not datasets:
-        raise FileNotFoundError(f"No CSV datasets discovered under {raw_root}")
+        raise FileNotFoundError("No train CSV files discovered in data/raw/<dataset>/ directories.")
 
     return datasets
 
 
-# --- Подбирает подходящие CSV внутри переданного пути
-def _collect_csv_candidates(path: Path) -> list[Path]:
-    if path.is_file() and path.suffix.lower() == ".csv":
-        return [path.resolve()]
-    if path.is_dir():
-        specific = path / f"{path.name}.csv"
-        if specific.exists():
-            return [specific.resolve()]
-        train = path / "train.csv"
-        if train.exists():
-            return [train.resolve()]
-        csv_files = sorted(p.resolve() for p in path.glob("*.csv"))
-        return csv_files
-    return []
-
-
-# --- Определяет имя набора данных по файлу и каталогу raw
-def _derive_dataset_name(csv_path: Path, raw_root: Path) -> str:
+# --- Определяет ключ набора данных на основе файла и каталога raw
+def _dataset_key(csv_path: Path, raw_root: Path) -> str:
+    csv_path = csv_path.resolve()
     try:
-        relative_parent = csv_path.parent.resolve().relative_to(raw_root.resolve())
-        if relative_parent == Path("."):
-            return csv_path.stem
-        return relative_parent.parts[-1]
+        relative = csv_path.parent.relative_to(raw_root)
     except ValueError:
         return csv_path.stem
+
+    parts = relative.parts
+    if not parts or parts == (".",):
+        return csv_path.stem
+
+    base = parts[-1]
+    if csv_path.stem == "train":
+        return f"{base}_{csv_path.stem}"
+    return csv_path.stem
 
 
 # --- Основная точка входа агента
@@ -107,8 +86,7 @@ def main() -> None:
 
     for dataset_name in result:
         print(
-            f"{dataset_name} обработан: metadata в data/processed/{dataset_name}, "
-            f"форматы AutoML в data/processed/{dataset_name}/LAMA и data/processed/{dataset_name}/FEDOT."
+            f"{dataset_name} обработан: CSV в data/processed/{dataset_name}, metadata в reports."
         )
 
 

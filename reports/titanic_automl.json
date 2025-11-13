@@ -1,0 +1,54 @@
+{
+  "dataset": "titanic",
+  "task_type": "classification",
+  "target_column": "Survived",
+  "automl": {
+    "data": {
+      "train": "data\\processed\\titanic\\train.csv",
+      "test": null
+    },
+    "framework": "LightAutoML",
+    "version": "0.4.1",
+    "run": {
+      "started_at": "2025-11-13T23:23:06.914069Z",
+      "timeout_seconds": 600
+    },
+    "best_model": {
+      "name": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
+      "weight": 0.48241
+    },
+    "test_metrics": {
+      "auc": 0.8534914361001318
+    },
+    "leaderboard": [
+      {
+        "model": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
+        "weight": 0.48241
+      },
+      {
+        "model": "5 averaged models Lvl_0_Pipe_1_Mod_1_Tuned_LightGBM",
+        "weight": 0.39204
+      },
+      {
+        "model": "5 averaged models Lvl_0_Pipe_1_Mod_3_Tuned_CatBoost",
+        "weight": 0.06488
+      },
+      {
+        "model": "5 averaged models Lvl_0_Pipe_0_Mod_0_LinearL2",
+        "weight": 0.06067
+      }
+    ]
+  },
+  "data_processing": {
+    "rows": 891,
+    "original_columns": 12,
+    "processed_features": 11,
+    "transformations": [
+      "Dropped columns: PassengerId, Name, Ticket, Cabin",
+      "Encoded columns: Embarked, Pclass",
+      "Normalized columns: Age, Fare",
+      "Imputation strategies: Age=median",
+      "Binary encoded (0/1): Sex (female->0 / male->1)"
+    ]
+  }
+}
