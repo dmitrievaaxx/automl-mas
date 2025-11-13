@@ -106,7 +106,10 @@ def main() -> None:
     result = agent.run()
 
     for dataset_name in result:
-        print(f"{dataset_name} обработан: сохранены splits и metadata в data/processed/{dataset_name}.")
+        print(
+            f"{dataset_name} обработан: metadata в data/processed/{dataset_name}, "
+            f"форматы AutoML в data/processed/{dataset_name}/LAMA и data/processed/{dataset_name}/FEDOT."
+        )
 
 
 if __name__ == "__main__":

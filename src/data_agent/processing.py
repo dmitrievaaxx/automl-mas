@@ -5,6 +5,8 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping
 
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -12,6 +14,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from pandas.api.types import is_bool_dtype, is_integer_dtype, is_numeric_dtype
 
 
 @dataclass
@@ -198,8 +201,15 @@ def generate_metadata(
     source_path: str,
     target: str,
     run_started: str,
+    task_info: Mapping[str, Any],
+    feature_roles: Mapping[str, List[str]],
+    automl_exports: Mapping[str, Mapping[str, Any]],
 ) -> Dict[str, Any]:
     categorical_count = sum(1 for feature in result.feature_names if feature.startswith("cat_"))
+    roles_payload = {key: sorted(list(value)) for key, value in feature_roles.items()}
+    roles_payload["target"] = target
+    exports_payload = deepcopy(automl_exports)
+    task_details = dict(task_info)
     metadata = {
         "dataset": dataset_name,
         "source_path": source_path,
@@ -217,6 +227,13 @@ def generate_metadata(
             "started_at": run_started,
             "split": dict(config),
         },
+        "task_type": task_details.get("type", "unknown"),
+        "task_details": task_details,
+        "auto_ml": {
+            "target_column": target,
+            "roles": roles_payload,
+            "exports": exports_payload,
+        },
         "llm": {
             "model": llm_info.get("model"),
             "status": llm_info.get("status"),
@@ -228,6 +245,64 @@ def generate_metadata(
     if raw_response:
         metadata["llm"]["raw_response"] = raw_response
     return metadata
+
+
+# --- Определяет тип задачи и характеристики таргета
+def infer_task_info(target: pd.Series) -> Dict[str, Any]:
+    series = target.dropna()
+    if series.empty:
+        return {"type": "unknown", "classes": []}
+
+    unique_values = pd.unique(series)
+    unique_count = int(len(unique_values))
+
+    if is_bool_dtype(series) or not is_numeric_dtype(series) or (
+        _is_integer_like(series) and unique_count <= 20
+    ):
+        classes_sorted = sorted(unique_values, key=lambda value: str(value))
+        classes = [_to_python_scalar(value) for value in classes_sorted]
+        task_mode = "binary" if len(classes) == 2 else "multiclass"
+        return {
+            "type": "classification",
+            "mode": task_mode,
+            "classes": classes,
+            "class_count": len(classes),
+        }
+
+    return {"type": "regression"}
+
+
+# --- Выводит роли признаков для авто-ML
+def derive_feature_roles(features: pd.DataFrame) -> Dict[str, List[str]]:
+    numeric: List[str] = []
+    categorical: List[str] = []
+    for column, dtype in features.dtypes.items():
+        if is_numeric_dtype(dtype):
+            numeric.append(column)
+        else:
+            categorical.append(column)
+    return {
+        "all": sorted(list(features.columns)),
+        "numeric": sorted(numeric),
+        "category": sorted(categorical),
+    }
+
+
+# --- Преобразует значения в JSON-совместимые типы
+def _to_python_scalar(value: Any) -> Any:
+    return value.item() if hasattr(value, "item") else value
+
+
+# --- Проверяет, можно ли считать числовой таргет целочисленным
+def _is_integer_like(series: pd.Series) -> bool:
+    if is_integer_dtype(series):
+        return True
+    if not is_numeric_dtype(series):
+        return False
+    values = series.dropna().to_numpy()
+    if values.size == 0:
+        return False
+    return np.allclose(values, np.round(values))
 
 
 # --- Заполняет пропущенные ключи рекомендаций значениями по умолчанию
@@ -365,4 +440,6 @@ __all__ = [
     "apply_recommendations",
     "split_dataset",
     "generate_metadata",
+    "infer_task_info",
+    "derive_feature_roles",
 ]

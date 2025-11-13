@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import shutil
 from pathlib import Path
-from typing import Dict, Mapping, Tuple
+from typing import Any, Dict, Mapping, Tuple
 
 import pandas as pd
 
@@ -18,6 +18,13 @@ PROCESSED_DIR = DATA_DIR / "processed"
 def ensure_dir(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+# --- Очищает папку и создаёт её заново
+def reset_dir(path: Path) -> Path:
+    if path.exists():
+        shutil.rmtree(path)
+    return ensure_dir(path)
 
 
 # --- Загружает датасет из файла или URL в DataFrame
@@ -47,18 +54,49 @@ def load_multiple(datasets: Mapping[str, str | Path]) -> Dict[str, pd.DataFrame]
     return {name: load_dataset(path) for name, path in datasets.items()}
 
 
-# --- Сохраняет разбиения на train/val/test в CSV
-def save_splits(dataset_name: str, splits: Mapping[str, Tuple[pd.DataFrame, pd.Series]]) -> Dict[str, str]:
-    base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
-    paths: Dict[str, str] = {}
+# --- Сохраняет датасеты в форматах, подходящих для LAMA и FEDOT
+def save_automl_formats(
+    dataset_name: str,
+    splits: Mapping[str, Tuple[pd.DataFrame, pd.Series]],
+    target_column: str,
+) -> Dict[str, Dict[str, Any]]:
+    dataset_dir = reset_dir(PROCESSED_DIR / dataset_name)
+    lama_dir = ensure_dir(dataset_dir / "LAMA")
+    fedot_dir = ensure_dir(dataset_dir / "FEDOT")
+
+    lama_info: Dict[str, Any] = {
+        "format": "csv",
+        "target_column": target_column,
+        "base_dir": str(lama_dir.resolve()),
+        "splits": {},
+    }
+    fedot_info: Dict[str, Any] = {
+        "format": "csv",
+        "target_column": target_column,
+        "data_type": "table",
+        "base_dir": str(fedot_dir.resolve()),
+        "splits": {},
+    }
+
     for split_name, (features, target) in splits.items():
-        x_path = base_dir / f"{dataset_name}_X_{split_name}.csv"
-        y_path = base_dir / f"{dataset_name}_y_{split_name}.csv"
+        target_name = target.name or target_column
+
+        lama_path = lama_dir / f"{dataset_name}_{split_name}.csv"
+        combined = features.copy()
+        if target_name in combined.columns:
+            combined = combined.drop(columns=[target_name])
+        combined[target_name] = target.values
+        combined.to_csv(lama_path, index=False)
+        lama_info["splits"][split_name] = str(lama_path)
+
+        x_path = fedot_dir / f"{dataset_name}_X_{split_name}.csv"
+        y_path = fedot_dir / f"{dataset_name}_y_{split_name}.csv"
         features.to_csv(x_path, index=False)
         target.to_csv(y_path, index=False, header=True)
-        paths[f"X_{split_name}"] = str(x_path)
-        paths[f"y_{split_name}"] = str(y_path)
-    return paths
+        fedot_info["splits"][f"X_{split_name}"] = str(x_path)
+        fedot_info["splits"][f"y_{split_name}"] = str(y_path)
+
+    return {"lama": lama_info, "fedot": fedot_info}
 
 
 # --- Сохраняет метаданные обработки в JSON-файл

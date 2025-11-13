@@ -7,17 +7,14 @@ from typing import Dict, Mapping, Optional
 
 from copy import deepcopy
 
-from .io_utils import (
-    load_multiple,
-    reset_processed_folder,
-    save_metadata,
-    save_splits,
-)
+from .io_utils import load_multiple, reset_processed_folder, save_automl_formats, save_metadata
 from .llm_client import OpenRouterLLM
 from .processing import (
     apply_recommendations,
     build_prompt,
+    derive_feature_roles,
     generate_metadata,
+    infer_task_info,
     split_dataset,
     summarize,
 )
@@ -69,13 +66,15 @@ class DataAgent:
                 test_size=self.config.test_size,
                 random_state=self.config.random_state,
             )
-            split_paths = save_splits(name, splits)
+            automl_exports = save_automl_formats(name, splits, self.target)
 
             split_config = {
                 "val_size": self.config.val_size,
                 "test_size": self.config.test_size,
                 "random_state": self.config.random_state,
             }
+            task_info = infer_task_info(transformation.target)
+            feature_roles = derive_feature_roles(transformation.features)
             metadata = generate_metadata(
                 dataset_name=name,
                 summary=summary,
@@ -87,23 +86,17 @@ class DataAgent:
                 source_path=str(self.datasets[name]),
                 target=self.target,
                 run_started=run_started,
+                task_info=task_info,
+                feature_roles=feature_roles,
+                automl_exports=automl_exports,
             )
             metadata_path = save_metadata(name, metadata)
 
-            artifact_paths = {
-                **split_paths,
-                "metadata_json": metadata_path,
-            }
-
             results[name] = {
                 "dataset_name": name,
-                "train_path": split_paths["X_train"],
-                "train_y_path": split_paths["y_train"],
-                "val_path": split_paths["X_val"],
-                "val_y_path": split_paths["y_val"],
-                "test_path": split_paths["X_test"],
-                "test_y_path": split_paths["y_test"],
                 "metadata_path": metadata_path,
+                "task_type": task_info.get("type"),
+                "automl": automl_exports,
             }
 
         return results
