@@ -5,8 +5,8 @@ import json
 import os
 from typing import Any, Dict, Iterable, List, Optional
 
-import requests
-from requests import Response
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
 
 try:
@@ -44,7 +44,6 @@ class OpenRouterLLM:
         self.models: List[str] = list(models) if models else list(DEFAULT_MODELS)
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self.session = requests.Session()
         self.last_call: Optional[Dict[str, Any]] = None
 
     # --- Перебирает модели, пока одна не вернёт корректный JSON
@@ -71,25 +70,22 @@ class OpenRouterLLM:
         self.last_call["error"] = str(last_error) if last_error else "Unknown error"
         raise RuntimeError(f"All LLM models failed: {last_error}") from last_error
 
-    # --- Выполняет HTTP-вызов выбранной модели OpenRouter
+    # --- Выполняет вызов выбранной модели через LangChain
     def _call_model(self, model: str, prompt: str) -> str:
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": "You are a data preparation assistant. Reply with JSON only."},
-                {"role": "user", "content": prompt},
-            ],
-        }
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        response = self.session.post(
-            f"{self.base_url}/chat/completions", json=payload, headers=headers, timeout=self.timeout
+        client = ChatOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            model=model,
+            timeout=self.timeout,
         )
-        self._raise_for_status(response)
-        data = response.json()
-        choices = data.get("choices", [])
-        if not choices:
-            raise ValueError("No choices returned by LLM response.")
-        return choices[0]["message"]["content"]
+        messages = [
+            SystemMessage(content="You are a data preparation assistant. Reply with JSON only."),
+            HumanMessage(content=prompt),
+        ]
+        response = client.invoke(messages)
+        if not getattr(response, "content", None):
+            raise ValueError("LLM response is empty.")
+        return response.content
 
     # --- Преобразует строку ответа в словарь JSON
     @staticmethod
@@ -107,13 +103,4 @@ class OpenRouterLLM:
             except json.JSONDecodeError:
                 continue
         raise ValueError("LLM response is not valid JSON.")
-
-    # --- Бросает подробную ошибку, если HTTP-ответ неуспешный
-    @staticmethod
-    def _raise_for_status(response: Response) -> None:
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as exc:
-            detail = exc.response.text if exc.response is not None else str(exc)
-            raise RuntimeError(f"OpenRouter request failed: {detail}") from exc
 

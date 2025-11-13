@@ -14,7 +14,7 @@
   "transformations": [
     "Dropped columns: PassengerId, Name, Ticket, Cabin",
     "Encoded columns: Embarked, Pclass",
-    "Normalized columns: Age, SibSp, Parch, Fare",
+    "Normalized columns: Age, Fare",
     "Imputation strategies: Age=median, Embarked=most_frequent",
     "Binary encoded (0/1): Sex (female->0 / male->1)"
   ],
@@ -26,14 +26,12 @@
       "Cabin"
     ],
     "encode": [
-      "Sex",
       "Pclass",
+      "Sex",
       "Embarked"
     ],
     "normalize": [
       "Age",
-      "SibSp",
-      "Parch",
       "Fare"
     ],
     "impute": {
@@ -43,7 +41,7 @@
   },
   "prompt": "You are a senior data preprocessing expert. Produce a JSON plan for transforming the dataset.\nDataset: titanic\nRows: 891, Columns: 12 (including target)\nTarget column: Survived (dtype: int64)\nTarget distribution: {0: 0.616, 1: 0.384}\nOverall missing %: 8.1%\n\nInstructions (follow ALL):\n- Respond with a SINGLE valid JSON object using keys: drop_columns, encode, normalize, impute.\n- Never include the target column in any list. Do not drop, encode, normalize or impute it.\n- drop_columns: identifiers, free-text fields, columns with >100 unique values, or >60% missing values.\n- encode: categorical columns with >2 unique categories (use one-hot). For columns with exactly two categories, map them to a single numeric column (e.g., 0/1) instead of producing multiple one-hot fields. Exclude anything already listed in drop_columns.\n- normalize: numeric columns (float/int) that benefit from scaling. Exclude target and columns slated for drop or encode.\n- impute: only columns that need missing-value handling. Allowed strategies: mean, median, most_frequent, constant.\n- Avoid conflicting actions (e.g., a column cannot be both dropped and encoded).\n- Prefer removing extremely high-cardinality text columns instead of encoding them.\n- If unsure, leave a list empty.\n\nValid JSON example (structure only):\n{\n  \"drop_columns\": [\"<column_to_drop>\"],\n  \"encode\": [\"<categorical_column>\"],\n  \"normalize\": [\"<numeric_column>\"],\n  \"impute\": {\"<column_with_missing>\": \"median\"}\n}\n\nColumns summary (first 20):\n- PassengerId: dtype=int64, missing%=0.0, unique=891\n- Pclass: dtype=int64, missing%=0.0, unique=3\n- Name: dtype=object, missing%=0.0, unique=891\n- Sex: dtype=object, missing%=0.0, unique=2\n- Age: dtype=float64, missing%=19.87, unique=88\n- SibSp: dtype=int64, missing%=0.0, unique=7\n- Parch: dtype=int64, missing%=0.0, unique=7\n- Ticket: dtype=object, missing%=0.0, unique=681\n- Fare: dtype=float64, missing%=0.0, unique=248\n- Cabin: dtype=object, missing%=77.1, unique=147\n- Embarked: dtype=object, missing%=0.22, unique=3",
   "run": {
-    "started_at": "2025-11-13T06:32:06.624984Z",
+    "started_at": "2025-11-13T07:23:15.137856Z",
     "split": {
       "val_size": 0.2,
       "test_size": 0.1,
@@ -67,7 +65,7 @@
       {
         "model": "meta-llama/llama-4-maverick:free",
         "status": "error",
-        "error": "OpenRouter request failed: {\"error\":{\"message\":\"Provider returned error\",\"code\":403,\"metadata\":{\"raw\":\"{\\\"title\\\":\\\"Access Forbidden\\\",\\\"detail\\\":\\\"This resource is not available in your region\\\",\\\"status\\\":403}\",\"provider_name\":\"Meta\"}},\"user_id\":\"user_33TmMC4KIPhofAQSRHtggnPxyeI\"}"
+        "error": "Error code: 403 - {'error': {'message': 'Provider returned error', 'code': 403, 'metadata': {'raw': '{\"title\":\"Access Forbidden\",\"detail\":\"This resource is not available in your region\",\"status\":403}', 'provider_name': 'Meta'}}, 'user_id': 'user_33TmMC4KIPhofAQSRHtggnPxyeI'}"
       },
       {
         "model": "meta-llama/llama-3.3-70b-instruct:free",
@@ -81,18 +79,18 @@
       {
         "model": "google/gemini-2.0-flash-exp:free",
         "status": "error",
-        "error": "OpenRouter request failed: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"google/gemini-2.0-flash-exp:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Google\"}},\"user_id\":\"user_33TmMC4KIPhofAQSRHtggnPxyeI\"}"
+        "error": "Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'google/gemini-2.0-flash-exp:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Google'}}, 'user_id': 'user_33TmMC4KIPhofAQSRHtggnPxyeI'}"
       },
       {
         "model": "mistralai/mistral-small-3.2-24b-instruct:free",
         "status": "error",
-        "error": "OpenRouter request failed: {\"error\":{\"message\":\"Provider returned error\",\"code\":503,\"metadata\":{\"raw\":\"{\\\"detail\\\":\\\"No instances available (yet) for chute_id='8cac9bf4-d7e2-55eb-b4bb-1416b7f57131'\\\"}\",\"provider_name\":\"Chutes\"}},\"user_id\":\"user_33TmMC4KIPhofAQSRHtggnPxyeI\"}"
+        "error": "Error code: 503 - {'error': {'message': 'Provider returned error', 'code': 503, 'metadata': {'raw': '{\"detail\":\"No instances available (yet) for chute_id=\\'8cac9bf4-d7e2-55eb-b4bb-1416b7f57131\\'\"}', 'provider_name': 'Chutes'}}, 'user_id': 'user_33TmMC4KIPhofAQSRHtggnPxyeI'}"
       },
       {
         "model": "deepseek/deepseek-r1-0528-qwen3-8b:free",
         "status": "success"
       }
     ],
-    "raw_response": "{\n  \"drop_columns\": [\"PassengerId\", \"Name\", \"Ticket\", \"Cabin\"],\n  \"encode\": [\"Sex\", \"Pclass\", \"Embarked\"],\n  \"normalize\": [\"Age\", \"SibSp\", \"Parch\", \"Fare\"],\n  \"impute\": {\n    \"Age\": \"median\",\n    \"Embarked\": \"most_frequent\"\n  }\n}"
+    "raw_response": "{\n  \"drop_columns\": [\"PassengerId\", \"Name\", \"Ticket\", \"Cabin\"],\n  \"encode\": [\"Pclass\", \"Sex\", \"Embarked\"],\n  \"normalize\": [\"Age\", \"Fare\"],\n  \"impute\": {\n    \"Age\": \"median\",\n    \"Embarked\": \"most_frequent\"\n  }\n}"
   }
 }
