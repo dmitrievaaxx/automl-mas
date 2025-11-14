@@ -12,6 +12,7 @@ import pandas as pd
 DATA_DIR = Path("data")
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 # --- Создаёт директорию, если её ещё нет
@@ -54,58 +55,51 @@ def load_multiple(datasets: Mapping[str, str | Path]) -> Dict[str, pd.DataFrame]
     return {name: load_dataset(path) for name, path in datasets.items()}
 
 
-# --- Сохраняет датасеты в форматах, подходящих для LAMA и FEDOT
+# --- Сохраняет датасеты в формате splits (train/val/test)
 def save_automl_formats(
     dataset_name: str,
-    splits: Mapping[str, Tuple[pd.DataFrame, pd.Series]],
+    dataset: pd.DataFrame,
     target_column: str,
+    split_name: str = "train",
+    reset: bool = False,
 ) -> Dict[str, Dict[str, Any]]:
-    dataset_dir = reset_dir(PROCESSED_DIR / dataset_name)
-    lama_dir = ensure_dir(dataset_dir / "LAMA")
-    fedot_dir = ensure_dir(dataset_dir / "FEDOT")
+    dataset_dir = PROCESSED_DIR / dataset_name
+    if reset:
+        reset_dir(dataset_dir)
+    else:
+        ensure_dir(dataset_dir)
 
-    lama_info: Dict[str, Any] = {
+    split_path = dataset_dir / f"{split_name}.csv"
+    dataset.to_csv(split_path, index=False)
+
+    splits_info: Dict[str, Any] = {
         "format": "csv",
         "target_column": target_column,
-        "base_dir": str(lama_dir.resolve()),
-        "splits": {},
-    }
-    fedot_info: Dict[str, Any] = {
-        "format": "csv",
-        "target_column": target_column,
-        "data_type": "table",
-        "base_dir": str(fedot_dir.resolve()),
-        "splits": {},
+        "base_dir": str(dataset_dir.resolve()),
+        "files": {
+            split_name: str(split_path)
+        },
     }
 
-    for split_name, (features, target) in splits.items():
-        target_name = target.name or target_column
-
-        lama_path = lama_dir / f"{dataset_name}_{split_name}.csv"
-        combined = features.copy()
-        if target_name in combined.columns:
-            combined = combined.drop(columns=[target_name])
-        combined[target_name] = target.values
-        combined.to_csv(lama_path, index=False)
-        lama_info["splits"][split_name] = str(lama_path)
-
-        x_path = fedot_dir / f"{dataset_name}_X_{split_name}.csv"
-        y_path = fedot_dir / f"{dataset_name}_y_{split_name}.csv"
-        features.to_csv(x_path, index=False)
-        target.to_csv(y_path, index=False, header=True)
-        fedot_info["splits"][f"X_{split_name}"] = str(x_path)
-        fedot_info["splits"][f"y_{split_name}"] = str(y_path)
-
-    return {"lama": lama_info, "fedot": fedot_info}
+    return {"splits": splits_info}
 
 
 # --- Сохраняет метаданные обработки в JSON-файл
 def save_metadata(dataset_name: str, metadata: Dict) -> str:
-    base_dir = ensure_dir(PROCESSED_DIR / dataset_name)
-    meta_path = base_dir / f"{dataset_name}_metadata.json"
+    reports_dir = ensure_dir(PROJECT_ROOT / "reports")
+    meta_path = reports_dir / f"{dataset_name}_metadata.json"
     with meta_path.open("w", encoding="utf-8") as file:
         json.dump(metadata, file, indent=2, ensure_ascii=False)
     return str(meta_path)
+
+
+# --- Загружает готовые метаданные
+def load_metadata(dataset_name: str) -> Dict[str, Any]:
+    meta_path = PROJECT_ROOT / "reports" / f"{dataset_name}_metadata.json"
+    if not meta_path.exists():
+        raise FileNotFoundError(f"Metadata not found at {meta_path}")
+    with meta_path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 # --- Полностью очищает папку обработанных данных

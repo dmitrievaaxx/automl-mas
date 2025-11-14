@@ -16,14 +16,12 @@ except ImportError:
 
 
 DEFAULT_MODELS = [
-    "meta-llama/llama-4-maverick:free",
+    "openai/gpt-4o",
     "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemini-2.0-flash-exp:free",
     "mistralai/mistral-small-3.2-24b-instruct:free",
     "deepseek/deepseek-r1-0528-qwen3-8b:free",
     "qwen/qwen3-coder:free",
-    "mistralai/mistral-7b-instruct:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
 ]
 
 
@@ -59,9 +57,12 @@ class OpenRouterLLM:
         for model in self.models:
             try:
                 raw = self._call_model(model, prompt)
+                # Парсим JSON - только если успешно, считаем модель успешной
+                parsed = self._parse_json(raw)
+                # Успех только после успешного парсинга
                 self.last_call["attempts"].append({"model": model, "status": "success"})
                 self.last_call.update({"model": model, "raw_response": raw, "status": "success"})
-                return self._parse_json(raw)
+                return parsed
             except Exception as exc:
                 self.last_call["attempts"].append({"model": model, "status": "error", "error": str(exc)})
                 last_error = exc

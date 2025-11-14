@@ -1,6 +1,3 @@
-[submodule "external_libs/fedot"]
-	path = external_libs/fedot
-	url = https://github.com/nccr-itmo/FEDOT
 [submodule "external_libs/lightautoml"]
 	path = external_libs/lightautoml
 	url = https://github.com/sberbank-ai-lab/LightAutoML

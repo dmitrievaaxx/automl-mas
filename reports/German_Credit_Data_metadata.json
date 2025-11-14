@@ -1,0 +1,252 @@
+{
+  "dataset": "German_Credit_Data",
+  "source_path": "D:\\hope\\multi-agent-automl\\data\\raw\\German_Credit_Data\\train.csv",
+  "target": "class",
+  "rows": 1000,
+  "original_columns": 21,
+  "processed_features": 58,
+  "categorical_ratio": 0.0,
+  "missing_pct_overall": 0.0,
+  "target_distribution": {
+    "good": 0.7,
+    "bad": 0.3
+  },
+  "transformations": [
+    "Dropped columns: credit_amount",
+    "Target encoded: bad->0, good->1",
+    "Encoded columns: checking_status, credit_history, employment, housing, job, other_parties, other_payment_plans, personal_status, property_magnitude, purpose, savings_status",
+    "Normalized columns: age, duration",
+    "Imputation strategies: defaults",
+    "Binary encoded (0/1): foreign_worker (no->0 / yes->1), own_telephone (none->0 / yes->1)"
+  ],
+  "recommendations": {
+    "drop_columns": [
+      "credit_amount"
+    ],
+    "encode": [
+      "checking_status",
+      "credit_history",
+      "purpose",
+      "savings_status",
+      "employment",
+      "personal_status",
+      "other_parties",
+      "property_magnitude",
+      "other_payment_plans",
+      "housing",
+      "job",
+      "own_telephone",
+      "foreign_worker"
+    ],
+    "normalize": [
+      "age",
+      "duration"
+    ],
+    "impute": {}
+  },
+  "prompt": "You are a senior data preprocessing expert. Produce a JSON plan for transforming the dataset.\nDataset: German_Credit_Data\nRows: 1000, Columns: 21 (including target)\nTarget column: class (dtype: object)\nTarget distribution: {'good': 0.7, 'bad': 0.3}\nOverall missing %: 0.0%\n\nInstructions (follow ALL):\n- Respond with a SINGLE valid JSON object using keys: drop_columns, encode, normalize, impute.\n- Never include the target column in any list. Do not drop, encode, normalize or impute it.\n- drop_columns: identifiers, free-text fields, columns with >100 unique values, or >60% missing values.\n- encode: categorical columns with >2 unique categories (use one-hot). For columns with exactly two categories, map them to a single numeric column (e.g., 0/1) instead of producing multiple one-hot fields. Exclude anything already listed in drop_columns.\n- normalize: numeric columns (float/int) that benefit from scaling. Exclude target and columns slated for drop or encode.\n- impute: only columns that need missing-value handling. Allowed strategies: mean, median, most_frequent, constant.\n- Avoid conflicting actions (e.g., a column cannot be both dropped and encoded).\n- Prefer removing extremely high-cardinality text columns instead of encoding them.\n- If unsure, leave a list empty.\n\nValid JSON example (structure only):\n{\n  \"drop_columns\": [\"<column_to_drop>\"],\n  \"encode\": [\"<categorical_column>\"],\n  \"normalize\": [\"<numeric_column>\"],\n  \"impute\": {\"<column_with_missing>\": \"median\"}\n}\n\nColumns summary (first 20):\n- checking_status: dtype=object, missing%=0.0, unique=4\n- duration: dtype=int64, missing%=0.0, unique=33\n- credit_history: dtype=object, missing%=0.0, unique=5\n- purpose: dtype=object, missing%=0.0, unique=10\n- credit_amount: dtype=int64, missing%=0.0, unique=921\n- savings_status: dtype=object, missing%=0.0, unique=5\n- employment: dtype=object, missing%=0.0, unique=5\n- installment_commitment: dtype=int64, missing%=0.0, unique=4\n- personal_status: dtype=object, missing%=0.0, unique=4\n- other_parties: dtype=object, missing%=0.0, unique=3\n- residence_since: dtype=int64, missing%=0.0, unique=4\n- property_magnitude: dtype=object, missing%=0.0, unique=4\n- age: dtype=int64, missing%=0.0, unique=53\n- other_payment_plans: dtype=object, missing%=0.0, unique=3\n- housing: dtype=object, missing%=0.0, unique=3\n- existing_credits: dtype=int64, missing%=0.0, unique=4\n- job: dtype=object, missing%=0.0, unique=4\n- num_dependents: dtype=int64, missing%=0.0, unique=2\n- own_telephone: dtype=object, missing%=0.0, unique=2\n- foreign_worker: dtype=object, missing%=0.0, unique=2",
+  "run": {
+    "started_at": "2025-11-14T02:26:50.448809Z",
+    "split": {
+      "val_size": 0.0,
+      "test_size": 0.0,
+      "random_state": 42
+    }
+  },
+  "task_type": "classification",
+  "task_details": {
+    "type": "classification",
+    "mode": "binary",
+    "classes": [
+      0,
+      1
+    ],
+    "class_count": 2
+  },
+  "auto_ml": {
+    "target_column": "class",
+    "roles": {
+      "all": [
+        "age",
+        "checking_status_0<=X<200",
+        "checking_status_<0",
+        "checking_status_>=200",
+        "checking_status_no checking",
+        "credit_history_all paid",
+        "credit_history_critical/other existing credit",
+        "credit_history_delayed previously",
+        "credit_history_existing paid",
+        "credit_history_no credits/all paid",
+        "duration",
+        "employment_1<=X<4",
+        "employment_4<=X<7",
+        "employment_<1",
+        "employment_>=7",
+        "employment_unemployed",
+        "existing_credits",
+        "foreign_worker",
+        "housing_for free",
+        "housing_own",
+        "housing_rent",
+        "installment_commitment",
+        "job_high qualif/self emp/mgmt",
+        "job_skilled",
+        "job_unemp/unskilled non res",
+        "job_unskilled resident",
+        "num_dependents",
+        "other_parties_co applicant",
+        "other_parties_guarantor",
+        "other_parties_none",
+        "other_payment_plans_bank",
+        "other_payment_plans_none",
+        "other_payment_plans_stores",
+        "own_telephone",
+        "personal_status_female div/dep/mar",
+        "personal_status_male div/sep",
+        "personal_status_male mar/wid",
+        "personal_status_male single",
+        "property_magnitude_car",
+        "property_magnitude_life insurance",
+        "property_magnitude_no known property",
+        "property_magnitude_real estate",
+        "purpose_business",
+        "purpose_domestic appliance",
+        "purpose_education",
+        "purpose_furniture/equipment",
+        "purpose_new car",
+        "purpose_other",
+        "purpose_radio/tv",
+        "purpose_repairs",
+        "purpose_retraining",
+        "purpose_used car",
+        "residence_since",
+        "savings_status_100<=X<500",
+        "savings_status_500<=X<1000",
+        "savings_status_<100",
+        "savings_status_>=1000",
+        "savings_status_no known savings"
+      ],
+      "numeric": [
+        "age",
+        "checking_status_0<=X<200",
+        "checking_status_<0",
+        "checking_status_>=200",
+        "checking_status_no checking",
+        "credit_history_all paid",
+        "credit_history_critical/other existing credit",
+        "credit_history_delayed previously",
+        "credit_history_existing paid",
+        "credit_history_no credits/all paid",
+        "duration",
+        "employment_1<=X<4",
+        "employment_4<=X<7",
+        "employment_<1",
+        "employment_>=7",
+        "employment_unemployed",
+        "existing_credits",
+        "foreign_worker",
+        "housing_for free",
+        "housing_own",
+        "housing_rent",
+        "installment_commitment",
+        "job_high qualif/self emp/mgmt",
+        "job_skilled",
+        "job_unemp/unskilled non res",
+        "job_unskilled resident",
+        "num_dependents",
+        "other_parties_co applicant",
+        "other_parties_guarantor",
+        "other_parties_none",
+        "other_payment_plans_bank",
+        "other_payment_plans_none",
+        "other_payment_plans_stores",
+        "own_telephone",
+        "personal_status_female div/dep/mar",
+        "personal_status_male div/sep",
+        "personal_status_male mar/wid",
+        "personal_status_male single",
+        "property_magnitude_car",
+        "property_magnitude_life insurance",
+        "property_magnitude_no known property",
+        "property_magnitude_real estate",
+        "purpose_business",
+        "purpose_domestic appliance",
+        "purpose_education",
+        "purpose_furniture/equipment",
+        "purpose_new car",
+        "purpose_other",
+        "purpose_radio/tv",
+        "purpose_repairs",
+        "purpose_retraining",
+        "purpose_used car",
+        "residence_since",
+        "savings_status_100<=X<500",
+        "savings_status_500<=X<1000",
+        "savings_status_<100",
+        "savings_status_>=1000",
+        "savings_status_no known savings"
+      ],
+      "category": [],
+      "target": "class"
+    },
+    "exports": {
+      "splits": {
+        "format": "csv",
+        "target_column": "class",
+        "base_dir": "D:\\hope\\multi-agent-automl\\data\\processed\\German_Credit_Data",
+        "files": {
+          "train": "data\\processed\\German_Credit_Data\\train.csv"
+        }
+      }
+    }
+  },
+  "llm": {
+    "model": "deepseek/deepseek-r1-0528-qwen3-8b:free",
+    "status": "success",
+    "candidate_models": [
+      "meta-llama/llama-4-maverick:free",
+      "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemini-2.0-flash-exp:free",
+      "mistralai/mistral-small-3.2-24b-instruct:free",
+      "deepseek/deepseek-r1-0528-qwen3-8b:free",
+      "qwen/qwen3-coder:free",
+      "mistralai/mistral-7b-instruct:free",
+      "meta-llama/llama-3.2-3b-instruct:free"
+    ],
+    "attempts": [
+      {
+        "model": "meta-llama/llama-4-maverick:free",
+        "status": "error",
+        "error": "Error code: 403 - {'error': {'message': 'Provider returned error', 'code': 403, 'metadata': {'raw': '{\"title\":\"Access Forbidden\",\"detail\":\"This resource is not available in your region\",\"status\":403}', 'provider_name': 'Meta'}}, 'user_id': 'user_33TmMC4KIPhofAQSRHtggnPxyeI'}"
+      },
+      {
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "status": "success"
+      },
+      {
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "status": "error",
+        "error": "LLM response is not valid JSON."
+      },
+      {
+        "model": "google/gemini-2.0-flash-exp:free",
+        "status": "success"
+      },
+      {
+        "model": "google/gemini-2.0-flash-exp:free",
+        "status": "error",
+        "error": "LLM response is not valid JSON."
+      },
+      {
+        "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+        "status": "error",
+        "error": "Error code: 429 - {'error': {'message': 'Provider returned error', 'code': 429, 'metadata': {'raw': 'mistralai/mistral-small-3.2-24b-instruct:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations', 'provider_name': 'Chutes'}}, 'user_id': 'user_33TmMC4KIPhofAQSRHtggnPxyeI'}"
+      },
+      {
+        "model": "deepseek/deepseek-r1-0528-qwen3-8b:free",
+        "status": "success"
+      }
+    ],
+    "raw_response": "{\n  \"drop_columns\": [\"credit_amount\"],\n  \"encode\": [\"checking_status\", \"credit_history\", \"purpose\", \"savings_status\", \"employment\", \"personal_status\", \"other_parties\", \"property_magnitude\", \"other_payment_plans\", \"housing\", \"job\", \"own_telephone\", \"foreign_worker\"],\n  \"normalize\": [\"age\", \"duration\"],\n  \"impute\": {}\n}"
+  }
+}

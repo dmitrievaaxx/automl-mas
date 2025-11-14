@@ -9,45 +9,41 @@
     },
     "framework": "LightAutoML",
     "version": "0.4.1",
+    "variant": "baseline",
     "run": {
-      "started_at": "2025-11-13T23:23:06.914069Z",
-      "timeout_seconds": 600
+      "started_at": "2025-11-14T07:28:01.033085Z",
+      "timeout_seconds": 600,
+      "variant": "baseline"
     },
     "best_model": {
       "name": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
-      "weight": 0.48241
+      "weight": 0.68332,
+      "score": 0.8644927536231884,
+      "metric": "auc"
     },
     "test_metrics": {
-      "auc": 0.8534914361001318
+      "auc": 0.8644927536231884
     },
     "leaderboard": [
       {
         "model": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
-        "weight": 0.48241
-      },
-      {
-        "model": "5 averaged models Lvl_0_Pipe_1_Mod_1_Tuned_LightGBM",
-        "weight": 0.39204
-      },
-      {
-        "model": "5 averaged models Lvl_0_Pipe_1_Mod_3_Tuned_CatBoost",
-        "weight": 0.06488
+        "weight": 0.68332
       },
       {
         "model": "5 averaged models Lvl_0_Pipe_0_Mod_0_LinearL2",
-        "weight": 0.06067
+        "weight": 0.31668
       }
     ]
   },
   "data_processing": {
     "rows": 891,
     "original_columns": 12,
-    "processed_features": 11,
+    "processed_features": 10,
     "transformations": [
-      "Dropped columns: PassengerId, Name, Ticket, Cabin",
+      "Dropped columns: PassengerId, Name, Ticket, Fare, Cabin",
       "Encoded columns: Embarked, Pclass",
-      "Normalized columns: Age, Fare",
-      "Imputation strategies: Age=median",
+      "Normalized columns: none",
+      "Imputation strategies: Age=median, Embarked=most_frequent",
       "Binary encoded (0/1): Sex (female->0 / male->1)"
     ]
   }

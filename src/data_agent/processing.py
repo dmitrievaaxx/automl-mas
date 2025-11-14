@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Mapping, MutableMapping
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional
 
 from copy import deepcopy
 
@@ -24,6 +24,7 @@ class TransformationResult:
     pipeline: ColumnTransformer
     history: List[str]
     feature_names: List[str]
+    target_mapping: Optional[Dict[Any, int]] = None
 
 
 # --- Формирует краткое описание датасета для LLM
@@ -91,8 +92,6 @@ def build_prompt(dataset_name: str, summary: Dict[str, Any], target: str) -> str
         "  \"normalize\": [\"<numeric_column>\"],\n"
         "  \"impute\": {\"<column_with_missing>\": \"median\"}\n"
         "}\n"
-        "\n"
-        "Columns summary (first 20):\n"
     )
 
     column_lines = []
@@ -105,7 +104,10 @@ def build_prompt(dataset_name: str, summary: Dict[str, Any], target: str) -> str
 
 # --- Применяет рекомендации и обучает пайплайн трансформаций
 def apply_recommendations(
-    df: pd.DataFrame, target: str, recommendations: Mapping[str, Any]
+    df: pd.DataFrame,
+    target: str,
+    recommendations: Mapping[str, Any],
+    pretrained_pipeline: Optional[ColumnTransformer] = None,
 ) -> TransformationResult:
     recommendations = _fill_defaults(recommendations)
     working = df.copy()
@@ -121,6 +123,18 @@ def apply_recommendations(
 
     X = working.drop(columns=[target])
     y = working[target]
+    target_mapping: Optional[Dict[Any, int]] = None
+    if not is_numeric_dtype(y):
+        uniques = sorted(y.dropna().unique(), key=lambda value: str(value))
+        if uniques:
+            target_mapping = {value: idx for idx, value in enumerate(uniques)}
+            y = y.map(target_mapping)
+            try:
+                y = y.astype("Int64")
+            except (TypeError, ValueError):
+                y = y.astype(float)
+            mapping_str = ", ".join(f"{k}->{v}" for k, v in target_mapping.items())
+            history.append(f"Target encoded: {mapping_str}")
 
     encode_cols = _resolve_encode_columns(X, recommendations["encode"])
     normalize_cols = [col for col in recommendations["normalize"] if col in X.columns]
@@ -138,8 +152,12 @@ def apply_recommendations(
         {col: strategy for col, strategy in recommendations["impute"].items() if col in X.columns}
     )
 
-    pipeline = _build_pipeline(X, encode_cols, normalize_cols, impute_map)
-    transformed = pipeline.fit_transform(X)
+    if pretrained_pipeline is None:
+        pipeline = _build_pipeline(X, encode_cols, normalize_cols, impute_map)
+        transformed = pipeline.fit_transform(X)
+    else:
+        pipeline = pretrained_pipeline
+        transformed = pipeline.transform(X)
     feature_names = list(pipeline.get_feature_names_out())
     features = pd.DataFrame(transformed, index=X.index, columns=feature_names)
 
@@ -160,7 +178,14 @@ def apply_recommendations(
         )
         history.append(f"Binary encoded (0/1): {formatted}")
 
-    return TransformationResult(features=features, target=y, pipeline=pipeline, history=history, feature_names=feature_names)
+    return TransformationResult(
+        features=features,
+        target=y,
+        pipeline=pipeline,
+        history=history,
+        feature_names=feature_names,
+        target_mapping=target_mapping,
+    )
 
 
 # --- Делит данные на train/val/test с учётом стратификации
@@ -171,22 +196,34 @@ def split_dataset(
     test_size: float = 0.1,
     random_state: int = 42,
 ) -> Dict[str, tuple[pd.DataFrame, pd.Series]]:
+    """Возвращает словарь со сплитами. При val_size и test_size равных нулю оставляет только train."""
+    splits: Dict[str, tuple[pd.DataFrame, pd.Series]] = {}
+
+    if test_size <= 0 and val_size <= 0:
+        splits["train"] = (features, target)
+        return splits
+
     stratify_target = target if _can_stratify(target, test_size, val_size) else None
-    X_temp, X_test, y_temp, y_test = train_test_split(
-        features, target, test_size=test_size, stratify=stratify_target, random_state=random_state
-    )
+    if test_size > 0:
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            features, target, test_size=test_size, stratify=stratify_target, random_state=random_state
+        )
+        splits["test"] = (X_test, y_test)
+    else:
+        X_temp, y_temp = features, target
 
-    adjusted_val = val_size / (1 - test_size)
-    stratify_temp = y_temp if stratify_target is not None else None
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_temp, y_temp, test_size=adjusted_val, stratify=stratify_temp, random_state=random_state
-    )
+    if val_size > 0:
+        adjusted_val = val_size / (1 - max(test_size, 0))
+        stratify_temp = y_temp if stratify_target is not None else None
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=adjusted_val, stratify=stratify_temp, random_state=random_state
+        )
+        splits["val"] = (X_val, y_val)
+    else:
+        X_train, y_train = X_temp, y_temp
 
-    return {
-        "train": (X_train, y_train),
-        "val": (X_val, y_val),
-        "test": (X_test, y_test),
-    }
+    splits["train"] = (X_train, y_train)
+    return splits
 
 
 # --- Формирует JSON с метаданными обработки
@@ -237,8 +274,6 @@ def generate_metadata(
         "llm": {
             "model": llm_info.get("model"),
             "status": llm_info.get("status"),
-            "candidate_models": list(llm_info.get("candidate_models", [])),
-            "attempts": list(llm_info.get("attempts", [])),
         },
     }
     raw_response = llm_info.get("raw_response") if isinstance(llm_info, Mapping) else None

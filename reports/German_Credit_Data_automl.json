@@ -1,0 +1,51 @@
+{
+  "dataset": "German_Credit_Data",
+  "task_type": "classification",
+  "target_column": "class",
+  "automl": {
+    "data": {
+      "train": "data\\processed\\German_Credit_Data\\train.csv",
+      "test": null
+    },
+    "framework": "LightAutoML",
+    "version": "0.4.1",
+    "variant": "baseline",
+    "run": {
+      "started_at": "2025-11-14T02:31:00.282253Z",
+      "timeout_seconds": 600,
+      "variant": "baseline"
+    },
+    "best_model": {
+      "name": "5 averaged models Lvl_0_Pipe_0_Mod_0_LinearL2",
+      "weight": 0.59829,
+      "score": 0.7679761904761906,
+      "metric": "auc"
+    },
+    "test_metrics": {
+      "auc": 0.7679761904761906
+    },
+    "leaderboard": [
+      {
+        "model": "5 averaged models Lvl_0_Pipe_0_Mod_0_LinearL2",
+        "weight": 0.59829
+      },
+      {
+        "model": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
+        "weight": 0.40171
+      }
+    ]
+  },
+  "data_processing": {
+    "rows": 1000,
+    "original_columns": 21,
+    "processed_features": 58,
+    "transformations": [
+      "Dropped columns: credit_amount",
+      "Target encoded: bad->0, good->1",
+      "Encoded columns: checking_status, credit_history, employment, housing, job, other_parties, other_payment_plans, personal_status, property_magnitude, purpose, savings_status",
+      "Normalized columns: age, duration",
+      "Imputation strategies: defaults",
+      "Binary encoded (0/1): foreign_worker (no->0 / yes->1), own_telephone (none->0 / yes->1)"
+    ]
+  }
+}

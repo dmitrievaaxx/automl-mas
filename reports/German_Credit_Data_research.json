@@ -1,0 +1,46 @@
+{
+  "dataset": "German_Credit_Data",
+  "generated_at": "2025-11-14T02:43:06.826433+00:00",
+  "baseline": {
+    "metric": "auc",
+    "value": 0.7679761904761906,
+    "best_model": {
+      "name": "5 averaged models Lvl_0_Pipe_0_Mod_0_LinearL2",
+      "score": 0.7679761904761906
+    }
+  },
+  "recommendations": [
+    {
+      "title": "Tabular Deep Learning Pretraining",
+      "description": "Proposes target-aware pretraining methods for tabular data, enhancing deep learning models' performance by leveraging unlabeled data, which is shown to beat Gradient Boosting Decision Trees in experiments.",
+      "source": "arXiv",
+      "url": "http://arxiv.org/abs/2207.03208v2",
+      "expected_gain": "+0.082 AUC",
+      "complexity": "hard"
+    },
+    {
+      "title": "Deep Abstract Networks",
+      "description": "Innovative neural architectures for tabular data with abstract layers to learn feature interactions, resulting in superior performance on various datasets.",
+      "source": "arXiv",
+      "url": "http://arXiv.org/abs/2112.02962v4",
+      "expected_gain": "+0.052 AUC",
+      "complexity": "hard"
+    },
+    {
+      "title": "Universal Tabular Embeddings",
+      "description": "Transforms tabular data into embeddings using a two-step graph auto-encoder approach, allowing for task-independent performance in classification tasks, demonstrated to outperform existing methods.",
+      "source": "arXiv",
+      "url": "http://arXiv.org/abs/2507.05904v1",
+      "expected_gain": "+0.062 AUC",
+      "complexity": "hard"
+    },
+    {
+      "title": "DGHNL with Dimensionality Reduction",
+      "description": "Combines optimized data splitting and dimensionality reduction with a deep learning model to improve classification accuracy and AUC in credit scoring tasks.",
+      "source": "Tavily",
+      "url": "https://link.springer.com/article/10.1007/s10462-024-10904-1",
+      "expected_gain": "+0.032 AUC",
+      "complexity": "medium"
+    }
+  ]
+}

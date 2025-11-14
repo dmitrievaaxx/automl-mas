@@ -1,0 +1,54 @@
+{
+  "dataset": "titanic",
+  "generated_at": "2025-11-14T07:31:01.959763+00:00",
+  "baseline": {
+    "metric": "auc",
+    "value": 0.8644927536231884,
+    "best_model": {
+      "name": "5 averaged models Lvl_0_Pipe_1_Mod_2_CatBoost",
+      "score": 0.8644927536231884
+    }
+  },
+  "recommendations": [
+    {
+      "title": "Random Forest with Hyperparameter Tuning",
+      "description": "Apply Random Forest with cross-validation and hyperparameter optimization to achieve superior performance. Multiple sources indicate Random Forest achieves ROC AUC above 0.89 with proper tuning.",
+      "source": "Tavily",
+      "url": "https://github.com/rakibnsajib/Titanic-Survival-Prediction-Using-Machine-Learning",
+      "expected_gain": "+0.0278 AUC",
+      "complexity": "medium"
+    },
+    {
+      "title": "Ensemble Stacking Method",
+      "description": "Use stacking ensemble technique with base models' predictions as features for a meta-model (logistic regression). This approach improved ROC-AUC to 0.8927 in experiments.",
+      "source": "Tavily",
+      "url": "https://www.atlantis-press.com/article/126015317.pdf",
+      "expected_gain": "+0.0282 AUC",
+      "complexity": "hard"
+    },
+    {
+      "title": "Model Integration/Ensembling",
+      "description": "Combine predictions from multiple models (logistic regression, Random Forest, XGBoost, LightGBM) through weighted averaging. This approach achieved ROC AUC of 0.883 through feature engineering and model integration.",
+      "source": "Tavily",
+      "url": "https://www.deanfrancispress.com/index.php/te/article/download/976/TE002112.pdf/4357",
+      "expected_gain": "+0.0185 AUC",
+      "complexity": "hard"
+    },
+    {
+      "title": "Target-Aware Pretraining for Tabular DL",
+      "description": "Use pretraining methods that leverage target labels during pretraining stage for tabular deep learning models. This approach significantly boosts performance and can lead to superiority over GBDTs.",
+      "source": "arXiv",
+      "url": "http://arxiv.org/abs/2207.03208v2",
+      "expected_gain": null,
+      "complexity": "hard"
+    },
+    {
+      "title": "Deep Abstract Networks (DANets)",
+      "description": "Apply novel neural component AbstLay that groups correlative features and generates higher-level features. DANets showed superior performance on tabular data classification tasks compared to traditional methods.",
+      "source": "arXiv",
+      "url": "http://arxiv.org/abs/2112.02962v4",
+      "expected_gain": null,
+      "complexity": "hard"
+    }
+  ]
+}

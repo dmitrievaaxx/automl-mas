@@ -7,7 +7,15 @@ from typing import Dict, Mapping, Optional
 
 from copy import deepcopy
 
-from .io_utils import load_multiple, reset_processed_folder, save_automl_formats, save_metadata
+import pandas as pd
+
+from .io_utils import (
+    load_metadata,
+    load_multiple,
+    reset_processed_folder,
+    save_automl_formats,
+    save_metadata,
+)
 from .llm_client import OpenRouterLLM
 from .processing import (
     apply_recommendations,
@@ -15,15 +23,14 @@ from .processing import (
     derive_feature_roles,
     generate_metadata,
     infer_task_info,
-    split_dataset,
     summarize,
 )
 
 
 @dataclass
 class AgentConfig:
-    val_size: float = 0.2
-    test_size: float = 0.1
+    val_size: float = 0.0
+    test_size: float = 0.0
     random_state: int = 42
 
 
@@ -48,25 +55,39 @@ class DataAgent:
         data_frames = load_multiple(self.datasets)
         results: Dict[str, Dict[str, str]] = {}
 
+        grouped: Dict[str, Dict[str, tuple[str, pd.DataFrame]]] = {}
         for name, df in data_frames.items():
-            reset_processed_folder(name)
+            base_name, role = self._parse_dataset_name(name)
+            if role == "train" and self.target not in df.columns:
+                role = "test"
+            grouped.setdefault(base_name, {})[role] = (name, df)
+
+        for base_name, split_map in grouped.items():
+            if "train" not in split_map:
+                raise ValueError(f"Для набора '{base_name}' не найден обучающий файл (train).")
+
+            train_label, train_df = split_map["train"]
+            reset_processed_folder(base_name)
+
             run_started = datetime.utcnow().isoformat() + "Z"
-            summary = summarize(df, self.target)
-            prompt = build_prompt(name, summary, self.target)
-            recommendations = self._get_recommendations(name, prompt)
+            summary = summarize(train_df, self.target)
+            prompt = build_prompt(base_name, summary, self.target)
+            recommendations = self._get_recommendations(base_name, prompt)
             llm_info = {}
             if self.llm is not None and getattr(self.llm, "last_call", None):
                 llm_info = deepcopy(self.llm.last_call)
-            transformation = apply_recommendations(df, self.target, recommendations)
 
-            splits = split_dataset(
-                transformation.features,
-                transformation.target,
-                val_size=self.config.val_size,
-                test_size=self.config.test_size,
-                random_state=self.config.random_state,
+            transformation = apply_recommendations(train_df, self.target, recommendations)
+
+            combined = transformation.features.copy()
+            combined[self.target] = transformation.target.values
+            automl_exports = save_automl_formats(
+                base_name,
+                combined,
+                self.target,
+                split_name="train",
+                reset=True,
             )
-            automl_exports = save_automl_formats(name, splits, self.target)
 
             split_config = {
                 "val_size": self.config.val_size,
@@ -76,27 +97,28 @@ class DataAgent:
             task_info = infer_task_info(transformation.target)
             feature_roles = derive_feature_roles(transformation.features)
             metadata = generate_metadata(
-                dataset_name=name,
+                dataset_name=base_name,
                 summary=summary,
                 result=transformation,
                 recommendations=recommendations,
                 prompt=prompt,
                 llm_info=llm_info,
                 config=split_config,
-                source_path=str(self.datasets[name]),
+                source_path=str(self.datasets[train_label]),
                 target=self.target,
                 run_started=run_started,
                 task_info=task_info,
                 feature_roles=feature_roles,
                 automl_exports=automl_exports,
             )
-            metadata_path = save_metadata(name, metadata)
+            metadata_path = save_metadata(base_name, metadata)
 
-            results[name] = {
-                "dataset_name": name,
+            results[train_label] = {
+                "dataset_name": base_name,
                 "metadata_path": metadata_path,
                 "task_type": task_info.get("type"),
                 "automl": automl_exports,
+                "split": "train",
             }
 
         return results
@@ -106,4 +128,10 @@ class DataAgent:
         if self.llm is None:
             raise RuntimeError("LLM client is not configured. Provide OpenRouterLLM instance.")
         return self.llm.get_recommendations(dataset_name, prompt)
+
+    @staticmethod
+    def _parse_dataset_name(dataset_name: str) -> tuple[str, str]:
+        if dataset_name.endswith("_train"):
+            return dataset_name[:-6], "train"
+        return dataset_name, "train"
 
