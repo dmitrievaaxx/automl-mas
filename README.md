@@ -52,7 +52,9 @@ python scripts/run_automl.py --dataset titanic
       "score": 0.8534914361001318
     },
     "test_metrics": {
-      "auc": 0.8534914361001318
+      "accuracy": 0.8212290502793296,
+      "f1": 0.7333333333333333,
+      "roc_auc": 0.8586297760210804
     }
   }
 }
