@@ -1,26 +1,3 @@
-
-
-1. **DataAgent**  
-   ```bash
-   python scripts/run_data_agent.py --dataset <dataset_name> --target <target_column>
-   ```
-   - Обработанные CSV → `data/processed/<dataset_name>/`
-   - Метаданные → `reports/<dataset_name>_metadata.json`
-
-2. **AutoML (LightAutoML)**  
-   ```bash
-   python scripts/run_automl.py --dataset <dataset_name>
-   ```
-   - Отчёт → `reports/<dataset_name>_automl.json`
-
-3. **ResearchAgent**  
-   ```bash
-   python scripts/run_research_agent.py --dataset <dataset_name>
-   ```
-   - Исследование → `reports/<dataset_name>_research.json`
-
----
-
 ## Пример: Titanic
 
 ### 1. DataAgent
