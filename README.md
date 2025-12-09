@@ -1,26 +1,19 @@
-# AutoML Pipeline Guide  
 
-.\.venv\Scripts\activate
 
-## Как обрабатывать любой датасет
-
-1. **Структура**  
-   Поместите `train.csv` в `data/raw/<dataset_name>/`
-
-2. **DataAgent**  
+1. **DataAgent**  
    ```bash
    python scripts/run_data_agent.py --dataset <dataset_name> --target <target_column>
    ```
    - Обработанные CSV → `data/processed/<dataset_name>/`
    - Метаданные → `reports/<dataset_name>_metadata.json`
 
-3. **AutoML (LightAutoML)**  
+2. **AutoML (LightAutoML)**  
    ```bash
    python scripts/run_automl.py --dataset <dataset_name>
    ```
    - Отчёт → `reports/<dataset_name>_automl.json`
 
-4. **ResearchAgent**  
+3. **ResearchAgent**  
    ```bash
    python scripts/run_research_agent.py --dataset <dataset_name>
    ```
